@@ -24,4 +24,11 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.google.android.gms:play-services:8.4.0'
+    compile 'com.indooratlas.android:indooratlas-android-sdk:2.0.2-beta@aar'
+}
+
+repositories{
+    maven {
+        url "http://indooratlas-ltd.bintray.com/mvn-public"
+    }
 }
