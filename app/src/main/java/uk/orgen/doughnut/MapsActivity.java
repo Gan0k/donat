@@ -21,6 +21,7 @@ import com.indooratlas.android.sdk.IALocationListener;
 import com.indooratlas.android.sdk.IALocationManager;
 import com.indooratlas.android.sdk.IALocationRequest;
 import com.indooratlas.android.sdk.IARegion;
+import com.firebase.client.Firebase;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,IALocationListener {
 
@@ -53,6 +54,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onResume() {
         super.onResume();
         mIALocationManager.requestLocationUpdates(IALocationRequest.create(), this);
+
+		Firebase.setAndroidContext(this);
+        Firebase myFirebaseRef = new Firebase("https://donat.firebaseio.com/");
+        myFirebaseRef.child("message").setValue("BIENE ALESSIO!");
     }
 
     @Override
