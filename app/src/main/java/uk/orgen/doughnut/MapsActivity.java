@@ -83,6 +83,7 @@ public class MapsActivity extends FragmentActivity {
 
     private Firebase fireRef;
     private String android_id;
+    private String newId;
 
     private ValueEventListener listener;
 
@@ -114,6 +115,7 @@ public class MapsActivity extends FragmentActivity {
                         location.getLongitude()), 17.5f));
                 mCameraPositionNeedsUpdating = false;
             }
+            fetchFloorPlan(newId);
         }
     };
 
@@ -140,7 +142,7 @@ public class MapsActivity extends FragmentActivity {
             // entering new region, mark need to move camera
             mCameraPositionNeedsUpdating = true;
 
-            final String newId = region.getId();
+            newId = region.getId();
 
             Toast.makeText(MapsActivity.this, newId, Toast.LENGTH_SHORT).show();
             fetchFloorPlan(newId);
