@@ -85,6 +85,9 @@ public class MapsActivity extends FragmentActivity {
     private String android_id;
     private String newId;
 
+    private double prevx = 0;
+    private double prevy = 0;
+
     private ValueEventListener listener;
 
     String TAG = "MapsActivity";
@@ -105,10 +108,17 @@ public class MapsActivity extends FragmentActivity {
                 return;
             }
 
-            Map<String, Double> pos = new HashMap<String, Double>();
-            pos.put("x", location.getLatitude());
-            pos.put("y", location.getLongitude());
-            fireRef.child(android_id).setValue(pos);
+            if (location.getLatitude() != prevx || location.getLongitude() != prevy) {
+
+                prevx = location.getLatitude();
+                prevy = location.getLongitude();
+
+                Map<String, Double> pos = new HashMap<String, Double>();
+                pos.put("x", prevx);
+                pos.put("y", prevy);
+
+                fireRef.child(android_id).setValue(pos);
+            }
 
             if (mCameraPositionNeedsUpdating) {
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(),
@@ -230,7 +240,6 @@ public class MapsActivity extends FragmentActivity {
     @Override
     protected void onDestroy() {
         mIALocationManager.destroy();
-        fireRef.child(android_id).updateChildren(null);
         super.onDestroy();
     }
 
