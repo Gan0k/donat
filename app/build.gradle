@@ -17,7 +17,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-	packagingOptions {
+    packagingOptions {
         exclude 'META-INF/LICENSE'
         exclude 'META-INF/LICENSE-FIREBASE.txt'
         exclude 'META-INF/NOTICE'
@@ -30,11 +30,12 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.google.android.gms:play-services-maps:8.4.0'
     compile 'com.indooratlas.android:indooratlas-android-sdk:2.0.2-beta@aar'
+    compile 'com.firebase:firebase-client-android:2.5.0+'
     compile 'com.squareup.picasso:picasso:2.5.2'
-	compile 'com.firebase:firebase-client-android:2.5.0+'
+    compile 'com.android.support:design:23.1.1'
 }
 
-repositories{
+repositories {
     maven {
         url "http://indooratlas-ltd.bintray.com/mvn-public"
     }
