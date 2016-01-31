@@ -230,6 +230,7 @@ public class MapsActivity extends FragmentActivity {
     @Override
     protected void onDestroy() {
         mIALocationManager.destroy();
+        fireRef.child(android_id).updateChildren(null);
         super.onDestroy();
     }
 
