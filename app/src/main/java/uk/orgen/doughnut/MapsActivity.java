@@ -1,9 +1,9 @@
 package uk.orgen.doughnut;
 
 import com.squareup.picasso.Target;
-import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.File;
 
 import android.Manifest;
 import android.app.DownloadManager;
@@ -58,9 +58,6 @@ import com.firebase.client.DataSnapshot;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
 
-import java.io.File;
-import java.util.Map;
-
 public class MapsActivity extends FragmentActivity {
 
     private static final int MAX_DIMENSION = 2048;
@@ -86,11 +83,8 @@ public class MapsActivity extends FragmentActivity {
 
     private Firebase fireRef;
     private String android_id;
-    private Runnable runnable;
-    private Handler handler;
 
     String TAG = "MapsActivity";
-
 
     private IALocationListener mListener = new IALocationListenerSupport() {
 
@@ -108,19 +102,14 @@ public class MapsActivity extends FragmentActivity {
                 return;
             }
 
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-            if (mMarker == null) {
-                // first location, add marker
-                mMarker = mMap.addMarker(new MarkerOptions().position(latLng)
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-            } else {
-                // move existing markers position to received location
-                mMarker.setPosition(latLng);
-            }
+            Map<String, Double> pos = new HashMap<String, Double>();
+            pos.put("x", location.getLatitude());
+            pos.put("y", location.getLongitude());
+            fireRef.child(android_id).setValue(pos);
 
-            // our camera position needs updating if location has significantly changed
             if (mCameraPositionNeedsUpdating) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.5f));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(),
+                        location.getLongitude()), 17.5f));
                 mCameraPositionNeedsUpdating = false;
             }
         }
@@ -153,6 +142,29 @@ public class MapsActivity extends FragmentActivity {
 
             Toast.makeText(MapsActivity.this, newId, Toast.LENGTH_SHORT).show();
             fetchFloorPlan(newId);
+
+            // Add listener to firebase ref
+            fireRef.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    mMap.clear();
+                    System.out.println("There are " + snapshot.getChildrenCount() + " people connected");
+                    int i = 0;
+                    for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                        Double x = (Double) postSnapshot.child("x").getValue();
+                        Double y = (Double) postSnapshot.child("y").getValue();
+                        System.out.println("Position user " + String.valueOf(i) + ": " +
+                                                String.valueOf(x) + " - " + String.valueOf(y));
+                        mMap.addMarker(new MarkerOptions().position(new LatLng(x,y))
+                             .icon(BitmapDescriptorFactory.defaultMarker(colors[i])));
+                        ++i;
+                   }
+                }
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+                    System.out.println("The read failed: " + firebaseError.getMessage());
+                }
+            });
         }
 
         @Override
@@ -174,21 +186,15 @@ public class MapsActivity extends FragmentActivity {
         mFloorPlanManager = IAResourceManager.create(this);
         mResourceManager =  IAResourceManager.create(this);
 
+        android_id = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
+
+        if (mMap == null) {
+            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
+                    .getMap();
+        }
+
         Firebase.setAndroidContext(this);
         fireRef = new Firebase("https://donat.firebaseio.com/");
-        android_id = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
-        handler = new Handler();
-        runnable = new Runnable() {
-            @Override
-            public void run() {
-                Random r = new Random();
-                Map<String, Double> pos = new HashMap<String, Double>();
-                pos.put("x", new Double(r.nextDouble()));
-                pos.put("y", new Double(r.nextDouble()));
-                fireRef.child(android_id).setValue(pos);
-                handler.postDelayed(this, 1000);
-            }
-        };
     }
 
     @Override
@@ -206,9 +212,6 @@ public class MapsActivity extends FragmentActivity {
         mIALocationManager.registerRegionListener(mRegionListener);
 
 		Firebase.setAndroidContext(this);
-        Firebase myFirebaseRef = new Firebase("https://donat.firebaseio.com/");
-        myFirebaseRef.child("message").setValue("BIENE ALESSIO!");
-        handler.postDelayed(runnable, 1000);
     }
 
     @Override
@@ -217,13 +220,11 @@ public class MapsActivity extends FragmentActivity {
 
         mIALocationManager.removeLocationUpdates(mListener);
         mIALocationManager.unregisterRegionListener(mRegionListener);
-        handler.removeCallbacks(runnable);
     }
 
     @Override
     protected void onDestroy() {
         mIALocationManager.destroy();
-        handler.removeCallbacks(runnable);
         super.onDestroy();
     }
 
@@ -331,7 +332,6 @@ public class MapsActivity extends FragmentActivity {
 
         // keep reference to task so that it can be canceled if needed
         mFetchFloorPlanTask = task;
-
     }
 
     /**
