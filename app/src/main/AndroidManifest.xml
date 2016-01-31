@@ -42,7 +42,7 @@
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps"
-            android:configChanges="keyboardHidden|orientation" >
+            android:configChanges="keyboardHidden|orientation|screenSize" >
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
