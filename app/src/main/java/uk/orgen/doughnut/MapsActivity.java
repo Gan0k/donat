@@ -84,6 +84,8 @@ public class MapsActivity extends FragmentActivity {
     private Firebase fireRef;
     private String android_id;
 
+    private ValueEventListener listener;
+
     String TAG = "MapsActivity";
 
     private IALocationListener mListener = new IALocationListenerSupport() {
@@ -144,7 +146,7 @@ public class MapsActivity extends FragmentActivity {
             fetchFloorPlan(newId);
 
             // Add listener to firebase ref
-            fireRef.addValueEventListener(new ValueEventListener() {
+            listener = fireRef.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
                     mMap.clear();
@@ -173,6 +175,7 @@ public class MapsActivity extends FragmentActivity {
                 mMarker.remove();
                 mMarker = null;
             }
+            fireRef.removeEventListener(listener);
         }
 
     };
