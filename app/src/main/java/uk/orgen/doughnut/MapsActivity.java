@@ -22,7 +22,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
-import android.support.v4.app.FragmentActivity; import android.os.Bundle;
 import android.provider.Settings.Secure;
 import android.os.Handler;
 
@@ -56,6 +55,12 @@ import java.io.File;
 import java.util.Map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IALocationListener {
+
+    private static final float[] colors = {BitmapDescriptorFactory.HUE_AZURE, BitmapDescriptorFactory.HUE_CYAN,
+                                            BitmapDescriptorFactory.HUE_GREEN, BitmapDescriptorFactory.HUE_MAGENTA,
+                                            BitmapDescriptorFactory.HUE_ORANGE, BitmapDescriptorFactory.HUE_RED,
+                                            BitmapDescriptorFactory.HUE_ROSE, BitmapDescriptorFactory.HUE_VIOLET,
+                                            BitmapDescriptorFactory.HUE_YELLOW};
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private Marker mMarker;
@@ -182,18 +187,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
         // Add listener to firebase ref
         fireRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
+                mMap.clear();
                 System.out.println("There are " + snapshot.getChildrenCount() + " people connected");
-                for (DataSnapshot postSnapshot : snapshot.getChildren()) {
-                    Double x = (Double) postSnapshot.child("x").getValue();
-                    Double y = (Double) postSnapshot.child("y").getValue();
-                    System.out.println(String.valueOf(x) + " - " + String.valueOf(y));
-                }
+                int i = 0;
+                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                  Double x = (Double) postSnapshot.child("x").getValue();
+                  Double y = (Double) postSnapshot.child("y").getValue();
+                  System.out.println(String.valueOf(x) + " - " + String.valueOf(y));
+                  mMap.addMarker(new MarkerOptions().position(new LatLng(x,y))
+                                .icon(BitmapDescriptorFactory.defaultMarker(colors[i])));
+                  ++i;
+              }
             }
-
             @Override
             public void onCancelled(FirebaseError firebaseError) {
                 System.out.println("The read failed: " + firebaseError.getMessage());
