@@ -4,6 +4,7 @@ import com.squareup.picasso.Target;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.File;
 
 import android.Manifest;
 import android.app.DownloadManager;
@@ -58,9 +59,6 @@ import com.firebase.client.DataSnapshot;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
 
-import java.io.File;
-import java.util.Map;
-
 public class MapsActivity extends FragmentActivity {
 
     private static final int MAX_DIMENSION = 2048;
@@ -86,11 +84,8 @@ public class MapsActivity extends FragmentActivity {
 
     private Firebase fireRef;
     private String android_id;
-    private Runnable runnable;
-    private Handler handler;
 
     String TAG = "MapsActivity";
-
 
     private IALocationListener mListener = new IALocationListenerSupport() {
 
@@ -123,6 +118,11 @@ public class MapsActivity extends FragmentActivity {
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.5f));
                 mCameraPositionNeedsUpdating = false;
             }
+
+            Map<String, Double> pos = new HashMap<String, Double>();
+            pos.put("x", new Double(r.nextDouble()));
+            pos.put("y", new Double(r.nextDouble()));
+            fireRef.child(android_id).setValue(pos);
         }
     };
 
@@ -174,21 +174,32 @@ public class MapsActivity extends FragmentActivity {
         mFloorPlanManager = IAResourceManager.create(this);
         mResourceManager =  IAResourceManager.create(this);
 
+        android_id = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
+
         Firebase.setAndroidContext(this);
         fireRef = new Firebase("https://donat.firebaseio.com/");
-        android_id = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
-        handler = new Handler();
-        runnable = new Runnable() {
+
+        // Add listener to firebase ref
+        fireRef.addValueEventListener(new ValueEventListener() {
             @Override
-            public void run() {
-                Random r = new Random();
-                Map<String, Double> pos = new HashMap<String, Double>();
-                pos.put("x", new Double(r.nextDouble()));
-                pos.put("y", new Double(r.nextDouble()));
-                fireRef.child(android_id).setValue(pos);
-                handler.postDelayed(this, 1000);
+            public void onDataChange(DataSnapshot snapshot) {
+                mMap.clear();
+                System.out.println("There are " + snapshot.getChildrenCount() + " people connected");
+                int i = 0;
+                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                    Double x = (Double) postSnapshot.child("x").getValue();
+                    Double y = (Double) postSnapshot.child("y").getValue();
+                    System.out.println(String.valueOf(x) + " - " + String.valueOf(y));
+                    mMap.addMarker(new MarkerOptions().position(new LatLng(x,y))
+                         .icon(BitmapDescriptorFactory.defaultMarker(colors[i])));
+                    ++i;
+               }
             }
-        };
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+                System.out.println("The read failed: " + firebaseError.getMessage());
+            }
+        });
     }
 
     @Override
@@ -218,9 +229,6 @@ public class MapsActivity extends FragmentActivity {
         mIALocationManager.registerRegionListener(mRegionListener);
 
 		Firebase.setAndroidContext(this);
-        Firebase myFirebaseRef = new Firebase("https://donat.firebaseio.com/");
-        myFirebaseRef.child("message").setValue("BIENE ALESSIO!");
-        handler.postDelayed(runnable, 1000);
     }
 
     @Override
@@ -229,13 +237,11 @@ public class MapsActivity extends FragmentActivity {
 
         mIALocationManager.removeLocationUpdates(mListener);
         mIALocationManager.unregisterRegionListener(mRegionListener);
-        handler.removeCallbacks(runnable);
     }
 
     @Override
     protected void onDestroy() {
         mIALocationManager.destroy();
-        handler.removeCallbacks(runnable);
         super.onDestroy();
     }
 
