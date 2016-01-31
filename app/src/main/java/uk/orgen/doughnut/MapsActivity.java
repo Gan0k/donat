@@ -1,7 +1,6 @@
 package uk.orgen.doughnut;
 
 import com.squareup.picasso.Target;
-import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.File;
@@ -103,26 +102,16 @@ public class MapsActivity extends FragmentActivity {
                 return;
             }
 
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-            if (mMarker == null) {
-                // first location, add marker
-                mMarker = mMap.addMarker(new MarkerOptions().position(latLng)
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-            } else {
-                // move existing markers position to received location
-                mMarker.setPosition(latLng);
-            }
+            Map<String, Double> pos = new HashMap<String, Double>();
+            pos.put("x", location.getLatitude());
+            pos.put("y", location.getLongitude());
+            fireRef.child(android_id).setValue(pos);
 
-            // our camera position needs updating if location has significantly changed
             if (mCameraPositionNeedsUpdating) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.5f));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(),
+                        location.getLongitude()), 17.5f));
                 mCameraPositionNeedsUpdating = false;
             }
-
-            Map<String, Double> pos = new HashMap<String, Double>();
-            pos.put("x", new Double(r.nextDouble()));
-            pos.put("y", new Double(r.nextDouble()));
-            fireRef.child(android_id).setValue(pos);
         }
     };
 
@@ -153,6 +142,29 @@ public class MapsActivity extends FragmentActivity {
 
             Toast.makeText(MapsActivity.this, newId, Toast.LENGTH_SHORT).show();
             fetchFloorPlan(newId);
+
+            // Add listener to firebase ref
+            fireRef.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    mMap.clear();
+                    System.out.println("There are " + snapshot.getChildrenCount() + " people connected");
+                    int i = 0;
+                    for (DataSnapshot postSnapshot: snapshot.getChildren()) {
+                        Double x = (Double) postSnapshot.child("x").getValue();
+                        Double y = (Double) postSnapshot.child("y").getValue();
+                        System.out.println("Position user " + String.valueOf(i) + ": " +
+                                                String.valueOf(x) + " - " + String.valueOf(y));
+                        mMap.addMarker(new MarkerOptions().position(new LatLng(x,y))
+                             .icon(BitmapDescriptorFactory.defaultMarker(colors[i])));
+                        ++i;
+                   }
+                }
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+                    System.out.println("The read failed: " + firebaseError.getMessage());
+                }
+            });
         }
 
         @Override
@@ -176,30 +188,13 @@ public class MapsActivity extends FragmentActivity {
 
         android_id = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
 
+        if (mMap == null) {
+            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
+                    .getMap();
+        }
+
         Firebase.setAndroidContext(this);
         fireRef = new Firebase("https://donat.firebaseio.com/");
-
-        // Add listener to firebase ref
-        fireRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                mMap.clear();
-                System.out.println("There are " + snapshot.getChildrenCount() + " people connected");
-                int i = 0;
-                for (DataSnapshot postSnapshot: snapshot.getChildren()) {
-                    Double x = (Double) postSnapshot.child("x").getValue();
-                    Double y = (Double) postSnapshot.child("y").getValue();
-                    System.out.println(String.valueOf(x) + " - " + String.valueOf(y));
-                    mMap.addMarker(new MarkerOptions().position(new LatLng(x,y))
-                         .icon(BitmapDescriptorFactory.defaultMarker(colors[i])));
-                    ++i;
-               }
-            }
-            @Override
-            public void onCancelled(FirebaseError firebaseError) {
-                System.out.println("The read failed: " + firebaseError.getMessage());
-            }
-        });
     }
 
     @Override
@@ -349,7 +344,6 @@ public class MapsActivity extends FragmentActivity {
 
         // keep reference to task so that it can be canceled if needed
         mFetchFloorPlanTask = task;
-
     }
 
     /**
